@@ -1,0 +1,184 @@
+<doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<style>
+*{padding:0;margin:0}
+.game{ width:421px; padding:10px 5px; margin:0 auto; background-color:#f0f0f0;}
+.play{width:411px; margin:0 auto; overflow:hidden;}
+.left{float:left; position:relative;}
+.right{float:right;}
+#score{ display:block; width:100px; height:48px; background-color:#000; text-align:center; margin-top:10px; font:12px yahei; line-height:48px;color:#FFF;}
+.news{ position:relative;width:100px; height:20px; background-color:#FFF; margin-top:10px; overflow:hidden;}
+
+.LV{ position:relative;width:100px; height:20px; background-color:#FFF; margin-top:10px; overflow:hidden;}
+.LV a{font:12px yahei; line-height:20px;}
+.news a{ position:absolute; dispaly:block; height:20px; width:400px; left:100px; line-height:20px; font:12px yahei;line-height:20px;}
+.function{ width:80px; height:171px; padding:10px; background-color:#FFF; margin-top:33px;}
+.function p{ color:#F00; font: 12px yahei; line-height:32px;}
+.button{ display:block; width:80px; height:24px; margin:10px auto; background-color:#0F0; color:#FFF; text-align:center; font:12px yahei; line-height:24px;}
+.button:hover{ background-color:#FFF; color:#F00;}
+#showLV{ width:301px; height:280px; position:absolute; top:40px; display:none; opacity:1;}
+#showLV a{display:block; width:301px; height:40px; text-align:center; color:#f00; font:24px yahei;}
+</style>
+<body>
+<div class="game">
+    <div class="play">
+	    <div class="left">
+            <div id="showLV">
+                <img src="images/good.png" width="301" height="220" />
+                <a id="showText">离星哥请你吃饭还有X分！</a>
+            </div>
+	        <canvas id="play" width="301" height="441" style=" background-color:#000;"></canvas>
+		</div>
+		<div class="right">
+		    <canvas id="nextblock" width="100" height="100" style=" background-color:#000;"></canvas>
+			<a id="score">0</a>
+            <div class="news">
+                <a id="text">打到10000分，星哥请你吃饭！</a>
+            </div>
+            <div class="LV">
+                <a>LV:<a><a id="LV">1</a>
+            </div>
+            <div class="function">
+            <a class="button" id="start">开始</a>
+            <a class="button" id="pause">暂停</a>
+            <a class="button" id="restart">重新开始</a>
+            <p>移动：方向键<br />旋转：a键</p>
+            </div>
+		
+		</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript" src="js/index.js"></script>
+<script>
+var text=document.getElementById("text");
+var textLeft=-100;
+var textTimer=setInterval(function(){
+	
+	if(textLeft<=240){
+		textLeft+=2;
+	}
+	else{
+		textLeft=-100;
+	}
+	text.style.left=-textLeft+'px';
+},66)
+
+var showLv=document.getElementById("LV");
+var showtext=document.getElementById("showText");
+
+/*********************************************以下是俄罗斯方块控制模块*****************************************************/
+//获取play画布元素
+//并且设置画布元素环境
+var c=document.getElementById("play");
+var _do=c.getContext("2d");
+//获取绘制下一个画布的元素
+//并且设置下一个画布的环境
+var cNext=document.getElementById("nextblock");
+var _doNext=cNext.getContext("2d");
+
+//方块数据模型
+var blockarr=[[{x:-0.5,y:1},{x:-0.5,y:0},{x:-0.5,y:-1},{x:0.5,y:1}],//L
+              [{x:0.5,y:1},{x:0.5,y:0},{x:0.5,y:-1},{x:-0.5,y:1}],//FL
+              [{x:-1,y:0.5},{x:0,y:0.5},{x:0,y:-0.5},{x:1,y:-0.5}],//Z
+			  [{x:-1,y:-0.5},{x:0,y:-0.5},{x:0,y:0.5},{x:1,y:0.5}],//FZ
+              [{x:-1,y:0.5},{x:0,y:0.5},{x:1,y:0.5},{x:0,y:-0.5}],//TU
+              [{x:0,y:1.5},{x:0,y:0.5},{x:0,y:-0.5},{x:0,y:-1.5}],//l
+			  [{x:0.5,y:-0.5},{x:-0.5,y:-0.5},{x:-0.5,y:0.5},{x:0.5,y:0.5}]//tian
+			  ];//-_-
+//获取第一次方块数据			  
+var rand=Math.floor(Math.random()*7);
+var currentArr=blockarr[rand];
+//初始化旋转下一位置数组
+var nextArr=[{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}];
+//初始化下一个方块数据模型
+var nextBlock=[{x:0,y:0},{x:0,y:0},{x:0,y:0},{x:0,y:0}];
+//画第一次的下一次方块
+getNextBlock();
+//初始化全局数据
+//position X and Y
+var x=6;
+var y=0;
+//方块数据位置纠正参数
+var maxX=0;
+var maxY=0;
+//获取俄罗斯方块的最长x和y
+var Lx=0;
+var Ly=0;
+//设置游戏速度
+var speed=1000;
+//游戏开关
+var timer=null;
+//游戏分数
+var score=0;
+//showScore
+var showScore=1000;
+//等级
+var level=1;
+var Plevel=400;
+//每消一格的分数
+var Pscore=10;
+//创建第一个俄罗斯方块
+createBlock(x,y);
+//游戏控制器
+document.onkeydown=function(event){
+	var e = event || window.event || arguments.callee.caller.arguments[0];
+	//旋转按a
+	if(e && e.keyCode==65){
+	    rotateBlock(x,y);
+	}
+	//左移按左
+	if(e && e.keyCode==37){
+	    dropBlock(x,y);
+	    if(x-1<0||(!checkLeft())){
+			createBlock(x,y)
+		}
+		else{
+			dropBlock(x,y);
+			x-=1;
+			createBlock(x,y);
+		}
+	}
+	//右移按右
+	if(e && e.keyCode==39){
+	    dropBlock(x,y)
+	    if(x+Lx>=15||(!checkRight())){
+			createBlock(x,y)
+		}
+		else{
+			dropBlock(x,y);
+			x+=1;
+			createBlock(x,y);
+		}
+	}
+	//快速掉落按下
+	if(e && e.keyCode==40){
+	    downDown();
+	}
+};
+timer=setInterval(function(){
+     start();
+},speed);
+
+
+var pause=document.getElementById("pause");
+pause.onclick=function(){
+	clearInterval(timer);
+}
+var Play=document.getElementById("start");
+Play.onclick=function(){
+	clearInterval(timer);
+	timer=setInterval(function(){	
+	    start();
+	},speed);
+}
+var restart=document.getElementById("restart");
+restart.onclick=function(){
+	location.reload();
+}
+</script>
+</html>
